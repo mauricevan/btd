@@ -1,0 +1,7 @@
+name,articleNumber,description,category,sellingPrice,purchasePrice,btwPercentage,stock,minStock,image
+Smart Lock Pro,SL-001,Geavanceerde smart lock met vingerafdruk en PIN-code,Smart Locks,149.99,89.99,21,15,5,https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400
+CCTV Camera HD,CC-002,1080p HD beveiligingscamera met nachtzicht,CCTV,79.99,45.50,21,3,5,https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400
+Alarmsysteem Basis,AS-003,Complete alarmset voor thuis of kantoor,Alarmsystemen,199.99,120.00,21,8,3,https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400
+Toegangscontrole RFID,TC-004,RFID kaartlezer voor bedrijfstoegang,Toegangscontrole,129.99,75.00,21,12,4,https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400
+Beveiligingscamera 4K,BC-005,4K Ultra HD camera met nachtzicht en motion detection,CCTV,299.99,180.00,21,6,3,https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400
+Smart Deurbel,SD-006,Video deurbel met app notificaties,Smart Locks,89.99,55.00,21,10,4,https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400 
