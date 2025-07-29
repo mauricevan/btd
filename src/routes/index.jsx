@@ -18,6 +18,9 @@ import CustomerDetail from "../pages/admin/CustomerDetail";
 import CustomerForm from "../pages/admin/CustomerForm";
 import Users from "../pages/admin/Users";
 import Inventory from "../pages/admin/Inventory";
+import WorkOrder from "../pages/WorkOrder";
+import WorkOrders from "../pages/admin/WorkOrders";
+import AddProduct from "../pages/admin/AddProduct";
 
 const pageVariants = {
   initial: { opacity: 0, y: 24 },
@@ -111,6 +114,14 @@ export default function AppRoutes() {
           }
         />
         <Route
+          path="/admin/inventory/add"
+          element={
+            <motion.div {...pageVariants} initial="initial" animate="animate" exit="exit">
+              <AddProduct />
+            </motion.div>
+          }
+        />
+        <Route
           path="/admin/customers"
           element={
             <motion.div {...pageVariants} initial="initial" animate="animate" exit="exit">
@@ -171,6 +182,22 @@ export default function AppRoutes() {
           element={
             <motion.div {...pageVariants} initial="initial" animate="animate" exit="exit">
               <AdminDashboard />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/workorder"
+          element={
+            <motion.div {...pageVariants} initial="initial" animate="animate" exit="exit">
+              <WorkOrder />
+            </motion.div>
+          }
+        />
+        <Route
+          path="/admin/workorders"
+          element={
+            <motion.div {...pageVariants} initial="initial" animate="animate" exit="exit">
+              <WorkOrders />
             </motion.div>
           }
         />

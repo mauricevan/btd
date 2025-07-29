@@ -1,146 +1,182 @@
-// Mock data voor klanten
+const API_URL = 'http://localhost:4000/api';
+
+// Helper function to get auth token from localStorage
+const getAuthToken = () => {
+  return localStorage.getItem('btd_token');
+};
+
+// Helper function to make authenticated requests
+const makeAuthenticatedRequest = async (url, options = {}) => {
+  const token = getAuthToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Token expired or invalid, clear it
+      localStorage.removeItem('btd_token');
+      localStorage.removeItem('btd_user');
+    }
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+// Simulate API delay for better UX
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Mock data voor fallback
 let customers = [
   {
     id: 1,
     name: "Jan Jansen",
     email: "jan.jansen@email.nl",
     phone: "06-12345678",
-    type: "particulier",
-    address: "Hoofdstraat 123, 3311 AA Dordrecht",
-    notes: "Klant heeft interesse in beveiligingscamera's voor thuis",
-    products: ["CCTV Camera", "Smart Lock"],
+    address: "Hoofdstraat 123",
+    city: "Dordrecht",
+    postalCode: "3311 AA",
+    notes: "Klant sinds 2020\nInteresse in smart locks\nLaatste contact: 15-01-2024",
+    products: [],
     createdAt: "2024-01-15",
-    lastContact: "2024-01-20"
+    updatedAt: "2024-01-15"
   },
   {
     id: 2,
-    name: "Bouwbedrijf Van der Berg",
-    email: "info@bouwbedrijf.nl",
+    name: "Bedrijf XYZ BV",
+    email: "info@bedrijfxyz.nl",
     phone: "078-1234567",
-    type: "bedrijf",
-    address: "Industrieweg 45, 3312 AB Dordrecht",
-    notes: "Grote klant, regelmatige onderhoudscontracten",
-    products: ["Toegangscontrole", "Alarmsysteem", "CCTV"],
-    createdAt: "2023-11-10",
-    lastContact: "2024-01-18"
-  },
-  {
-    id: 3,
-    name: "Maria de Vries",
-    email: "maria.devries@hotmail.com",
-    phone: "06-87654321",
-    type: "particulier",
-    address: "Kerkstraat 67, 3313 AC Dordrecht",
-    notes: "Nieuwe klant, heeft slot vervangen nodig",
-    products: ["Smart Lock"],
-    createdAt: "2024-01-22",
-    lastContact: "2024-01-22"
+    address: "Industrieweg 45",
+    city: "Rotterdam",
+    postalCode: "3000 AB",
+    notes: "Grote klant\nJaarlijks contract\nContactpersoon: Piet de Vries",
+    products: [],
+    createdAt: "2024-01-10",
+    updatedAt: "2024-01-10"
   }
 ];
-
-// Simuleer API delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const customerService = {
   // Haal alle klanten op
   async getCustomers() {
-    await delay(300);
-    return [...customers];
+    try {
+      await delay(300);
+      return await makeAuthenticatedRequest(`${API_URL}/customers`);
+    } catch (error) {
+      console.log('API not available, using mock customers');
+      return [...customers];
+    }
   },
 
   // Haal één klant op
   async getCustomer(id) {
-    await delay(200);
-    const customer = customers.find(c => c.id === parseInt(id));
-    if (!customer) {
-      throw new Error('Klant niet gevonden');
+    try {
+      await delay(200);
+      return await makeAuthenticatedRequest(`${API_URL}/customers/${id}`);
+    } catch (error) {
+      console.log('API not available, using mock customer');
+      const customer = customers.find(c => c.id === parseInt(id));
+      if (!customer) {
+        throw new Error('Klant niet gevonden');
+      }
+      return customer;
     }
-    return customer;
   },
 
   // Voeg nieuwe klant toe
   async addCustomer(customerData) {
-    await delay(400);
-    const newCustomer = {
-      id: Math.max(...customers.map(c => c.id)) + 1,
-      ...customerData,
-      createdAt: new Date().toISOString().split('T')[0],
-      lastContact: new Date().toISOString().split('T')[0],
-      products: customerData.products || []
-    };
-    customers.push(newCustomer);
-    return newCustomer;
+    try {
+      await delay(500);
+      return await makeAuthenticatedRequest(`${API_URL}/customers`, {
+        method: 'POST',
+        body: JSON.stringify(customerData)
+      });
+    } catch (error) {
+      console.error('Add customer error:', error);
+      throw error;
+    }
   },
 
   // Update klant
   async updateCustomer(id, customerData) {
-    await delay(400);
-    const index = customers.findIndex(c => c.id === parseInt(id));
-    if (index === -1) {
-      throw new Error('Klant niet gevonden');
+    try {
+      await delay(300);
+      return await makeAuthenticatedRequest(`${API_URL}/customers/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(customerData)
+      });
+    } catch (error) {
+      console.error('Update customer error:', error);
+      throw error;
     }
-    
-    customers[index] = {
-      ...customers[index],
-      ...customerData,
-      lastContact: new Date().toISOString().split('T')[0]
-    };
-    
-    return customers[index];
   },
 
   // Verwijder klant
   async deleteCustomer(id) {
-    await delay(300);
-    const index = customers.findIndex(c => c.id === parseInt(id));
-    if (index === -1) {
-      throw new Error('Klant niet gevonden');
+    try {
+      await delay(300);
+      const response = await makeAuthenticatedRequest(`${API_URL}/customers/${id}`, {
+        method: 'DELETE'
+      });
+      return response.success;
+    } catch (error) {
+      console.error('Delete customer error:', error);
+      return false;
     }
-    
-    const deletedCustomer = customers[index];
-    customers = customers.filter(c => c.id !== parseInt(id));
-    return deletedCustomer;
   },
 
   // Zoek klanten
   async searchCustomers(query) {
-    await delay(200);
-    const searchTerm = query.toLowerCase();
-    return customers.filter(customer => 
-      customer.name.toLowerCase().includes(searchTerm) ||
-      customer.email.toLowerCase().includes(searchTerm) ||
-      customer.phone.includes(searchTerm)
-    );
-  },
-
-  // Filter klanten op type
-  async filterCustomersByType(type) {
-    await delay(200);
-    if (type === 'all') return [...customers];
-    return customers.filter(customer => customer.type === type);
-  },
-
-  // Voeg notitie toe aan klant
-  async addNote(customerId, note) {
-    await delay(300);
-    const customer = customers.find(c => c.id === parseInt(customerId));
-    if (!customer) {
-      throw new Error('Klant niet gevonden');
+    try {
+      await delay(300);
+      return await makeAuthenticatedRequest(`${API_URL}/customers/search/${query}`);
+    } catch (error) {
+      console.log('API not available, using mock search');
+      return customers.filter(customer =>
+        customer.name.toLowerCase().includes(query.toLowerCase()) ||
+        customer.email.toLowerCase().includes(query.toLowerCase()) ||
+        customer.phone?.includes(query) ||
+        customer.city?.toLowerCase().includes(query.toLowerCase())
+      );
     }
-    
-    const newNote = {
-      id: Date.now(),
-      text: note,
-      date: new Date().toISOString(),
-      author: 'Admin'
-    };
-    
-    customer.notes = customer.notes ? 
-      `${customer.notes}\n\n${new Date().toLocaleDateString('nl-NL')}: ${note}` :
-      `${new Date().toLocaleDateString('nl-NL')}: ${note}`;
-    
-    customer.lastContact = new Date().toISOString().split('T')[0];
-    
-    return customer;
+  },
+
+  // Voeg product toe aan klant
+  async addProductToCustomer(customerId, productId) {
+    try {
+      await delay(300);
+      return await makeAuthenticatedRequest(`${API_URL}/customers/${customerId}/products`, {
+        method: 'POST',
+        body: JSON.stringify({ productId })
+      });
+    } catch (error) {
+      console.error('Add product to customer error:', error);
+      throw error;
+    }
+  },
+
+  // Verwijder product van klant
+  async removeProductFromCustomer(customerId, productId) {
+    try {
+      await delay(300);
+      const response = await makeAuthenticatedRequest(`${API_URL}/customers/${customerId}/products/${productId}`, {
+        method: 'DELETE'
+      });
+      return response.success;
+    } catch (error) {
+      console.error('Remove product from customer error:', error);
+      return false;
+    }
   }
 }; 

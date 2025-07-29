@@ -19,9 +19,12 @@ export default function Register() {
   const { t } = useLanguage();
 
   const handleRegister = async (email, password, setError) => {
-    const user = await apiRegister(email, password);
+    // Vraag de gebruiker om een naam, of gebruik het e-mailadres als fallback
+    const name = email.split('@')[0];
+    console.log("handleRegister aangeroepen", email, password, name);
+    const user = await apiRegister(email, password, name);
     if (user) {
-      login(user); // Pass the full user object
+      login(user);
       navigate("/webshop");
     } else {
       setError(t("user_exists"));

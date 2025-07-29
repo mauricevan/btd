@@ -1,18 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+
+const API_URL = '/api/auth/register';
 
 const Users = () => {
   const { role } = useAuth();
   const navigate = useNavigate();
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Admin', email: 'admin@btd.nl', role: 'admin' },
-    { id: 2, name: 'Gebruiker', email: 'gebruiker@btd.nl', role: 'user' },
-    { id: 3, name: 'Test User', email: 'test@btd.nl', role: 'user' }
-  ]);
+  const [users, setUsers] = useState([]);
   const [userForm, setUserForm] = useState({ name: '', email: '', password: '', role: 'user' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  useEffect(() => {
+    // Haal users op uit de backend
+    fetch('/api/auth/users', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('btd_token')}`
+      }
+    })
+      .then(async res => {
+        if (res.status === 403) {
+          setError('Je hebt geen toegang tot deze pagina. Log in als admin.');
+          setUsers([]);
+          return [];
+        }
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setUsers(data);
+        } else {
+          setUsers([]);
+        }
+      })
+      .catch(() => {
+        setError('Kan gebruikers niet ophalen.');
+        setUsers([]);
+      });
+  }, []);
 
   // Check admin access
   if (role !== 'admin') {
@@ -24,25 +48,39 @@ const Users = () => {
     setUserForm({ ...userForm, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userForm.name || !userForm.email || !userForm.password) {
       setError('Vul alle velden in.');
       return;
     }
-    
-    const newUser = {
-      id: Date.now(),
-      name: userForm.name,
-      email: userForm.email,
-      role: userForm.role
-    };
-    
-    setUsers(prev => [...prev, newUser]);
-    setUserForm({ name: '', email: '', password: '', role: 'user' });
     setError('');
-    setSuccess('Gebruiker succesvol toegevoegd!');
-    setTimeout(() => setSuccess(''), 3000);
+    setSuccess('');
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: userForm.name,
+          email: userForm.email,
+          password: userForm.password
+        })
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        setError(err.error || 'Fout bij toevoegen gebruiker');
+        return;
+      }
+      const data = await response.json();
+      setUsers(prev => [...prev, data.user]);
+      setUserForm({ name: '', email: '', password: '', role: 'user' });
+      setSuccess('Gebruiker succesvol toegevoegd!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      setError('Netwerkfout bij toevoegen gebruiker');
+    }
   };
 
   const handleDelete = (userId) => {
@@ -182,7 +220,7 @@ const Users = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
+                {Array.isArray(users) && users.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{user.name}</div>

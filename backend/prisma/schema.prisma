@@ -1,0 +1,132 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  password      String
+  name          String
+  role          String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  notifications Notification[]
+  tasks         Task[]
+  workOrders    WorkOrder[]
+}
+
+model Product {
+  id               Int               @id @default(autoincrement())
+  name             String
+  articleNumber    String            @unique
+  description      String?
+  categoryId       Int
+  purchasePrice    Float
+  sellingPrice     Float
+  btwPercentage    Int
+  priceInclBtw     Float?
+  image            String?
+  stock            Int               @default(0)
+  minStock         Int               @default(5)
+  isLowStock       Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  customerProducts CustomerProduct[]
+  category         Category          @relation(fields: [categoryId], references: [id])
+}
+
+model Task {
+  id            Int            @id @default(autoincrement())
+  title         String
+  description   String?
+  status        String
+  feedback      String?
+  completedAt   DateTime?
+  userId        Int?
+  pdfName       String?
+  pdfUrl        String?
+  workOrderId   Int?           @unique
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  notifications Notification[]
+  user          User?          @relation(fields: [userId], references: [id])
+  workOrder     WorkOrder?     @relation(fields: [workOrderId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  message   String
+  read      Boolean  @default(false)
+  userId    Int
+  taskId    Int?
+  createdAt DateTime @default(now())
+  task      Task?    @relation(fields: [taskId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Customer {
+  id               Int               @id @default(autoincrement())
+  name             String
+  email            String            @unique
+  phone            String?
+  type             String
+  address          String?
+  notes            String?
+  createdAt        DateTime          @default(now())
+  lastContact      DateTime?
+  customerProducts CustomerProduct[]
+}
+
+model CustomerProduct {
+  customerId Int
+  productId  Int
+  assignedAt DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
+
+  @@id([customerId, productId])
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model WorkOrder {
+  id          Int             @id @default(autoincrement())
+  customerName String
+  phone       String
+  email       String?
+  address     String?
+  postalCode  String?
+  city        String?
+  description String
+  date        DateTime
+  notes       String?
+  subtotal    Float
+  vatAmount   Float
+  total       Float
+  status      String          @default("open")
+  createdBy   Int
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  items       WorkOrderItem[]
+  task        Task?
+  createdByUser User           @relation(fields: [createdBy], references: [id])
+}
+
+model WorkOrderItem {
+  id            Int       @id @default(autoincrement())
+  workOrderId   Int
+  name          String
+  quantity      Int
+  price         Float
+  vatPercentage Int
+  workOrder     WorkOrder @relation(fields: [workOrderId], references: [id])
+}

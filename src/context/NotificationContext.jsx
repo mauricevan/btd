@@ -1,130 +1,135 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { notificationService } from '../services/notifications';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { notificationService } from "../services/notifications";
+import { useAuth } from "./AuthContext";
 
 const NotificationContext = createContext();
 
 export function NotificationProvider({ children }) {
-  const { role } = useAuth();
+  const { id: currentUserId, role } = useAuth() || {};
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Laad notificaties alleen voor admins
+  // Fetch notifications on mount and when user changes
   useEffect(() => {
-    if (role === 'admin') {
-      loadNotifications();
-      loadUnreadCount();
+    if (currentUserId) {
+      fetchNotifications();
+      fetchUnreadCount();
     }
-  }, [role]);
+  }, [currentUserId]);
 
-  // Auto-refresh elke 30 seconden voor admins
-  useEffect(() => {
-    if (role !== 'admin') return;
-
-    const interval = setInterval(() => {
-      loadUnreadCount();
-    }, 30000); // 30 seconden
-
-    return () => clearInterval(interval);
-  }, [role]);
-
-  const loadNotifications = async () => {
-    setLoading(true);
+  async function fetchNotifications() {
     try {
-      const data = await notificationService.getNotifications();
+      setLoading(true);
+      let data;
+      
+      if (role === 'admin') {
+        data = await notificationService.getNotifications();
+      } else {
+        data = await notificationService.getMyNotifications();
+      }
+      
       setNotifications(data);
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const loadUnreadCount = async () => {
+  async function fetchUnreadCount() {
     try {
       const count = await notificationService.getUnreadCount();
       setUnreadCount(count);
     } catch (error) {
-      console.error('Error loading unread count:', error);
+      console.error('Error fetching unread count:', error);
     }
-  };
+  }
 
-  const markAsRead = async (id) => {
+  async function markAsRead(id) {
     try {
-      await notificationService.markAsRead(id);
-      setNotifications(prev => 
-        prev.map(n => n.id === id ? { ...n, isRead: true } : n)
-      );
-      await loadUnreadCount();
+      const updatedNotification = await notificationService.markAsRead(id);
+      setNotifications(prev => prev.map(notification => 
+        notification.id === id ? updatedNotification : notification
+      ));
+      await fetchUnreadCount();
+      return updatedNotification;
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      throw error;
     }
-  };
+  }
 
-  const markAllAsRead = async () => {
+  async function markAllAsRead() {
     try {
       await notificationService.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications(prev => prev.map(notification => ({
+        ...notification,
+        isRead: true
+      })));
       setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+      throw error;
     }
-  };
+  }
 
-  const deleteNotification = async (id) => {
+  async function deleteNotification(id) {
     try {
-      await notificationService.deleteNotification(id);
-      setNotifications(prev => prev.filter(n => n.id !== id));
-      await loadUnreadCount();
+      const success = await notificationService.deleteNotification(id);
+      if (success) {
+        setNotifications(prev => prev.filter(notification => notification.id !== id));
+        await fetchUnreadCount();
+      }
+      return success;
     } catch (error) {
       console.error('Error deleting notification:', error);
+      return false;
     }
-  };
+  }
 
-  const clearAllNotifications = async () => {
+  async function createNotification(notificationData) {
     try {
-      await notificationService.clearAllNotifications();
-      setNotifications([]);
-      setUnreadCount(0);
-    } catch (error) {
-      console.error('Error clearing all notifications:', error);
-    }
-  };
-
-  const addNotification = async (notificationData) => {
-    try {
-      const newNotification = await notificationService.addNotification(notificationData);
+      const newNotification = await notificationService.createNotification(notificationData);
       setNotifications(prev => [newNotification, ...prev]);
-      await loadUnreadCount();
+      await fetchUnreadCount();
       return newNotification;
     } catch (error) {
-      console.error('Error adding notification:', error);
+      console.error('Error creating notification:', error);
+      throw error;
     }
-  };
+  }
 
-  const createTaskCompletedNotification = async (task, user) => {
+  async function createTaskCompletedNotification(task) {
     try {
-      const notification = await notificationService.createTaskCompletedNotification(task, user);
-      setNotifications(prev => [notification, ...prev]);
-      await loadUnreadCount();
-      return notification;
+      const notificationData = {
+        userId: task.userId,
+        type: 'task_completed',
+        title: 'Taak voltooid',
+        message: `Taak "${task.title}" is voltooid door ${task.user?.name || 'gebruiker'}`
+      };
+      
+      return await createNotification(notificationData);
     } catch (error) {
       console.error('Error creating task completed notification:', error);
     }
-  };
+  }
+
+  async function refreshNotifications() {
+    await fetchNotifications();
+    await fetchUnreadCount();
+  }
 
   const value = {
     notifications,
     unreadCount,
     loading,
-    loadNotifications,
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    clearAllNotifications,
-    addNotification,
-    createTaskCompletedNotification
+    createNotification,
+    createTaskCompletedNotification,
+    refreshNotifications
   };
 
   return (

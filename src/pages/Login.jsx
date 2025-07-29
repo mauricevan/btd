@@ -19,10 +19,10 @@ export default function Login() {
   const { t } = useLanguage();
 
   const handleLogin = async (email, password, setError) => {
-    const user = await apiLogin(email, password);
-    if (user) {
-      login(user); // Pass the full user object
-      if (user.role === "admin") {
+    const result = await apiLogin(email, password);
+    if (result && result.user && result.token) {
+      login(result.user, result.token); // Geef user en token door aan context
+      if (result.user.role === "admin") {
         navigate("/admin");
       } else {
         navigate("/user/tasks");

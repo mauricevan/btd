@@ -13,22 +13,25 @@ export function AuthProvider({ children }) {
     localStorage.setItem("btd_user", JSON.stringify(user));
   }, [user]);
 
-  // Accepts a user object from backend
-  const login = (roleOrUser) => {
-    if (typeof roleOrUser === 'object' && roleOrUser !== null) {
+  // Accepts a user object and token from backend
+  const login = (userData, token) => {
+    if (typeof userData === 'object' && userData !== null) {
       setUser({
         isLoggedIn: true,
-        role: roleOrUser.role,
-        email: roleOrUser.email,
-        id: roleOrUser.id
+        role: userData.role,
+        email: userData.email,
+        id: userData.id
       });
-    } else {
-      setUser({ isLoggedIn: true, role: roleOrUser, email: null, id: null });
+      // Store the token
+      localStorage.setItem("btd_token", token);
     }
   };
+
   const logout = () => {
     setUser({ isLoggedIn: false, role: null, email: null, id: null });
+    // Remove both user data and token
     localStorage.removeItem("btd_user");
+    localStorage.removeItem("btd_token");
   };
 
   return (

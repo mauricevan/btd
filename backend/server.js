@@ -1,100 +1,79 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
-const auth = require('./auth');
-const tasks = require('./tasks');
+const { testConnection, initializeDatabase } = require('./db');
+const config = require('./config');
+
+// Import routes
+const authRoutes = require('./routes/auth');
+const taskRoutes = require('./routes/tasks');
+const productRoutes = require('./routes/products');
+const customerRoutes = require('./routes/customers');
+const notificationRoutes = require('./routes/notifications');
+const workOrderRoutes = require('./routes/workorders');
 
 const app = express();
-const PORT = 4000;
 
+// Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Login
-app.post('/api/login', (req, res) => {
-  const { email, password } = req.body;
-  const user = auth.login(email, password);
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' });
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    message: 'BTD Dordrecht API is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API routes
+app.use('/api/auth', authRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/workorders', workOrderRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+// Start server
+async function startServer() {
+  try {
+    // Test database connection
+    await testConnection();
+    
+    // Initialize database with seed data
+    await initializeDatabase();
+    
+    // Start server
+    const PORT = config.server.port;
+    app.listen(PORT, () => {
+      console.log(`🚀 BTD Dordrecht Backend API running on http://localhost:${PORT}`);
+      console.log(`📊 Health check: http://localhost:${PORT}/health`);
+      console.log(`🔐 Auth endpoints: http://localhost:${PORT}/api/auth`);
+      console.log(`📋 Task endpoints: http://localhost:${PORT}/api/tasks`);
+      console.log(`📦 Product endpoints: http://localhost:${PORT}/api/products`);
+      console.log(`👥 Customer endpoints: http://localhost:${PORT}/api/customers`);
+      console.log(`🔔 Notification endpoints: http://localhost:${PORT}/api/notifications`);
+      console.log(`📋 Work order endpoints: http://localhost:${PORT}/api/workorders`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
   }
-});
+}
 
-// Register
-app.post('/api/register', (req, res) => {
-  const { email, password } = req.body;
-  const user = auth.register(email, password);
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(400).json({ error: 'User already exists' });
-  }
-});
-
-// Get all users
-app.get('/api/users', (req, res) => {
-  res.json(auth.getUsers());
-});
-
-// Update user
-app.put('/api/users/:id', (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const updates = req.body;
-  const user = auth.updateUser(id, updates);
-  if (user) {
-    res.json(user);
-  } else {
-    res.status(404).json({ error: 'User not found' });
-  }
-});
-
-// Delete user
-app.delete('/api/users/:id', (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const ok = auth.deleteUser(id);
-  if (ok) {
-    res.json({ success: true });
-  } else {
-    res.status(404).json({ error: 'User not found' });
-  }
-});
-
-// Get all tasks
-app.get('/api/tasks', (req, res) => {
-  res.json(tasks.getTasks());
-});
-
-// Get tasks by userId
-app.get('/api/tasks/user/:userId', (req, res) => {
-  const userId = parseInt(req.params.userId, 10);
-  res.json(tasks.getTasksByUserId(userId));
-});
-
-// Add a task
-app.post('/api/tasks', (req, res) => {
-  const task = tasks.addTask(req.body);
-  res.json(task);
-});
-
-// Update a task
-app.put('/api/tasks/:id', (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  const task = tasks.updateTask(id, req.body);
-  if (task) {
-    res.json(task);
-  } else {
-    res.status(404).json({ error: 'Task not found' });
-  }
-});
-
-// Delete a task
-app.delete('/api/tasks/:id', (req, res) => {
-  const id = parseInt(req.params.id, 10);
-  tasks.deleteTask(id);
-  res.json({ success: true });
-});
-
-app.listen(PORT, () => {
-  console.log(`Backend API running on http://localhost:${PORT}`);
-}); 
+startServer(); 

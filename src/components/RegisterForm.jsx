@@ -8,6 +8,7 @@ export default function RegisterForm({ onRegister }) {
 
   const handleSubmit = e => {
     e.preventDefault();
+    console.log("Register form submitted:", { email, password, confirm });
     if (!email || !password || !confirm) {
       setError("Vul alle velden in.");
       return;
