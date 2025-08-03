@@ -1,0 +1,5 @@
+name,articleNumber,description,categoryId,purchasePrice,sellingPrice,btwPercentage,stock,minStock
+"Smart Lock Pro","SL001","Geavanceerd slim deurslot met vingerafdrukscanner",1,89.99,149.99,21,10,5
+"CCTV Camera HD","CC002","1080p HD beveiligingscamera met nachtzicht",2,45.50,79.99,21,15,5
+"Alarmsysteem Basic","AS001","Basis alarmsysteem voor thuisgebruik",3,120.00,199.99,21,8,3
+"Toegangspas Set","TP001","Set van 10 RFID toegangspassen",4,15.00,29.99,21,50,20 
